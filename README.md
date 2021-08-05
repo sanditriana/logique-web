@@ -5,6 +5,8 @@ composer install
 # step 3
 setting .env
 # step 4
+php artisan optimize
+# step 5
 php artisan migrate --seed
-# step 5 
+# step 6 
 php artisan serve
