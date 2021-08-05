@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 
 use DB;
-
+use Session;
+use Illuminate\Support\Carbon;
 class RegisteredUserController extends Controller
 {
     /**
@@ -22,7 +23,7 @@ class RegisteredUserController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function create()
+    public function create(Request $request)
     {
         $memberShipTypes = MembershipType::all();
         return view('auth.register',compact('memberShipTypes'));
@@ -43,30 +44,46 @@ class RegisteredUserController extends Controller
             'dob' => 'required',
             'membershipType' => 'required',
             'cc' => 'required',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email:rfc,dns|max:255|unique:users',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
-            'first_name' => $request->firstName,
-            'last_name' => $request->lastName,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'dob' => $request->dob,
-            'credit_card' => $request->cc,
-            'membership_type' => $request->membershipType
-        ]);
+        DB::beginTransaction();
+        try {
+            $user = User::create([
+                'first_name' => $request->firstName,
+                'last_name' => $request->lastName,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'dob' => Carbon::parse($request->dob)->format('Y-m-d'),
+                'credit_card' => $request->cc,
+                'membership_type' => $request->membershipType
+            ]);
+    
+            $address = new UserAddress;
+            $address->user_id = $user->id;
+            $address->address = $request->address;
+            $address->save();
 
-        $address = new UserAddress;
-        $address->user_id = $user->id;
-        $address->address = $request->address;
-        $address->save();
+            DB::commit();
 
-        event(new Registered($user));
-
-        //do not autamatic login
-        //Auth::login($user);
-
-        return redirect(RouteServiceProvider::HOME);
+        } catch (\Throwable $th) {
+            //throw $th;
+            DB::rollback();
+            return redirect()
+            ->back()
+            ->withErrors(
+                [
+                    'errors'=>$th->getMessage()
+                ]
+            );
+        }
+        
+        return redirect()->route('login')->with(
+            [
+                'status' => 'Success register. please login in down below'
+            ]
+        );
+        
     }
 }

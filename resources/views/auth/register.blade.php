@@ -6,6 +6,8 @@
             </a>
         </x-slot>
 
+        <x-auth-session-status class="mb-4" :status="session('status')" />
+
         <!-- Validation Errors -->
         <x-auth-validation-errors class="mb-4" :errors="$errors" />
 
@@ -59,7 +61,7 @@
             <div class="mt-4">
                 <x-label for="address" :value="__('MemberShip')" />
 
-                <select name="membershipType" class="block mt-1 w-full">
+                <select name="membershipType" class="block mt-1 w-full MembershipType">
                     @foreach($memberShipTypes as $memberShipType)
                     <option value="{{$memberShipType->type}}">{{$memberShipType->type}}</option> 
                     @endforeach
