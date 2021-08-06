@@ -40,7 +40,7 @@
             <div class="mt-4">
                 <x-label for="email" :value="__('Date Of Birth')" />
 
-                <x-input id="dob" class="block mt-1 w-full" type="text" name="dob" :value="old('dob')" required />
+                <x-input id="dob" class="block mt-1 w-full" autocomplete="off" type="text" name="dob" :value="old('dob')" required />
             </div>
 
             <!-- CreditCard -->
@@ -48,6 +48,15 @@
                 <x-label for="creditCard" :value="__('Credit Card')" />
 
                 <x-input id="cc" class="block mt-1 w-full" type="text" name="cc" :value="old('cc')" required />
+                <label class="creditCardType" style="display:none"></label>
+                <label class="creditCardTypeFalse" style="color:red;display:none"></label>
+            </div>
+
+            <!-- CreditCard Expired Date-->
+            <div class="mt-4">
+                <x-label for="creditCardExpiryDate" :value="__('Credi Card Expired Date')" />
+
+                <x-input id="cc_expire_date" autocomplete="off" class="block mt-1 w-full" type="text" name="ccExpireDate" :value="old('ccExpireDate')" required />
             </div>
 
             <!-- Address -->
@@ -106,4 +115,25 @@
             </div>
         </form>
     </x-auth-card>
+    @push('scripts')
+    <script>
+        $(document).ready(function() {
+            $('#cc').change(function (e) { 
+                $('.creditCardType').show().html('');
+                $('.creditCardTypeFalse').show().html('');
+                $.get( "{{route('checkCard')}}", { card: $(this).val() } )
+                .done(function( json ) {
+                    if(json){
+                        $('.creditCardType').html(json);
+                    }else if(!json){
+                        $('.creditCardTypeFalse').html('Credit Card type not found');
+                    }
+                })
+            });
+
+            
+        });
+    </script>
+    @endpush
+
 </x-guest-layout>

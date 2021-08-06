@@ -29,6 +29,47 @@ class RegisteredUserController extends Controller
         return view('auth.register',compact('memberShipTypes'));
     }
 
+    public function checkCard(Request $request){
+        return $this->validatecard($request->card);
+    }
+
+    public function validatecard($number)
+    {
+        $cardtype = array(
+            "visa"       => "/^4[0-9]{12}(?:[0-9]{3})?$/",
+            "mastercard" => "/^5[1-5][0-9]{14}$/",
+            "amex"       => "/^3[47][0-9]{13}$/",
+            "discover"   => "/^6(?:011|5[0-9]{2})[0-9]{12}$/",
+        );
+
+        if (preg_match($cardtype['visa'],$number))
+        {
+        $type= "visa";
+            return 'visa';
+        
+        }
+        else if (preg_match($cardtype['mastercard'],$number))
+        {
+        $type= "mastercard";
+            return 'mastercard';
+        }
+        else if (preg_match($cardtype['amex'],$number))
+        {
+        $type= "amex";
+            return 'amex';
+        
+        }
+        else if (preg_match($cardtype['discover'],$number))
+        {
+        $type= "discover";
+            return 'discover';
+        }
+        else
+        {
+            return false;
+        } 
+    }
+
     /**
      * Handle an incoming registration request.
      *
@@ -44,9 +85,22 @@ class RegisteredUserController extends Controller
             'dob' => 'required',
             'membershipType' => 'required',
             'cc' => 'required',
+            'ccExpireDate' => 'required',
             'email' => 'required|string|email:rfc,dns|max:255|unique:users',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        $card = $this->validatecard($request->cc);
+        if(!$card){
+            DB::rollback();
+            return redirect()
+            ->back()
+            ->withErrors(
+                [
+                    'errors'=>'Credit Card not found'
+                ]
+            )->withInput();
+        }
 
         DB::beginTransaction();
         try {
@@ -56,7 +110,7 @@ class RegisteredUserController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'dob' => Carbon::parse($request->dob)->format('Y-m-d'),
-                'credit_card' => $request->cc,
+                'credit_card' => json_encode([$request->cc, $card, $request->ccExpireDate]),
                 'membership_type' => $request->membershipType
             ]);
     

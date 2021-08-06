@@ -42,5 +42,8 @@
     $(document).ready(function() {
         $('.MembershipType').select2();
         $('#dob').datepicker({autoclose: true});
+        $('#cc_expire_date').datepicker({autoclose: true});
     });
+    
 </script>
+@stack('scripts')
